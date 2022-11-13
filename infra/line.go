@@ -36,11 +36,11 @@ func fetchJwt() string {
 	buffer, err := ioutil.ReadAll(file)
 
 	if err != nil {
-		fmt.Printf("Failed to read the privatekey: %s\n", err)
+		log.Printf("Failed to read the privatekey: %s\n", err)
 	}
 	privkey, err := jwk.ParseKey(buffer)
 	if err != nil {
-		fmt.Printf("Failed to parse the privatekey to JWK format: %s\n", err)
+		log.Printf("Failed to parse the privatekey to JWK format: %s\n", err)
 	}
 
 	// Build JWT payload
@@ -91,5 +91,33 @@ func FetchChannelAccessToken() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(access_token_meta.Token)
 	return access_token_meta.Token
+}
+
+func RevokeAccessToken(accessToken string) {
+	payload := url.Values{}
+	payload.Set("client_id", os.Getenv("LINE_CHANNEL_ID"))
+	payload.Add("client_secret", os.Getenv("LINE_CHANNEL_SECRET"))
+	payload.Add("access_token", accessToken)
+
+	reqBody := strings.NewReader(payload.Encode())
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.line.me/oauth2/v2.1/revoke",
+		reqBody,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	log.Println(res.StatusCode)
 }

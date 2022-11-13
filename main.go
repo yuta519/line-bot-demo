@@ -9,9 +9,10 @@ import (
 )
 
 func main() {
+	access_token := infra.FetchChannelAccessToken()
 	bot, err := linebot.New(
 		os.Getenv("LINE_CHANNEL_SECRET"),
-		infra.FetchChannelAccessToken(),
+		access_token,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -21,4 +22,6 @@ func main() {
 	if _, err := bot.BroadcastMessage(message).Do(); err != nil {
 		log.Fatal(err)
 	}
+
+	infra.RevokeAccessToken(access_token)
 }
