@@ -15,6 +15,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"github.com/yuta519/line-bot-demo/utils"
 )
 
 type AccessTokenMeta struct {
@@ -59,7 +60,7 @@ func fetchJwt() string {
 	// Generate JWT (variable signed is a jwt)
 	signed, err := jwt.Sign(token, jwt.WithKey(jwa.RS256, privkey))
 	if err != nil {
-		fmt.Printf("Failed to sign token: %s\n", err)
+		log.Printf("Failed to sign token: %s\n", err)
 	}
 	return string(signed)
 }
@@ -71,8 +72,13 @@ func FetchChannelAccessToken() string {
 	payload.Add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
 	payload.Add("client_assertion", string(fetchJwt()))
 
+	// resBody := utils.POSTRequest(payload)
 	reqBody := strings.NewReader(payload.Encode())
-	req, err := http.NewRequest(http.MethodPost, "https://api.line.me/oauth2/v2.1/token", reqBody)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.line.me/oauth2/v2.1/token",
+		reqBody,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,24 +106,5 @@ func RevokeAccessToken(accessToken string) {
 	payload.Set("client_id", os.Getenv("LINE_CHANNEL_ID"))
 	payload.Add("client_secret", os.Getenv("LINE_CHANNEL_SECRET"))
 	payload.Add("access_token", accessToken)
-
-	reqBody := strings.NewReader(payload.Encode())
-	req, err := http.NewRequest(
-		http.MethodPost,
-		"https://api.line.me/oauth2/v2.1/revoke",
-		reqBody,
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-
-	log.Println(res.StatusCode)
+	utils.POSTRequest(payload)
 }
